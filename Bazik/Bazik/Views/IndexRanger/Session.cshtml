@@ -1,0 +1,159 @@
+﻿@model Bazik.Models.MsSqlSession
+@{
+    ViewBag.Title = "Bazik - session details";
+}
+
+@section Scripts
+{
+}
+
+@section Style
+{
+    <link type="text/css" href="/styles/qp.css"  rel="stylesheet" />
+
+    <style type="text/css">
+        body
+        {
+            font-family: helvetica;
+            font-size: 12px;
+        }
+        table
+        {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        table, th, td
+        {
+            border: 1px solid black;
+            padding: 4px;
+            vertical-align: top;
+        }
+        td
+        {
+            text-align: right;
+        }
+    </style>
+}
+
+<h1>Bazik (MS SQL Server - @ViewBag.srv, @Model.session_id)</h1>
+
+<a href="@Url.Action("ShowDashboard", new { serverName = ViewBag.srv })">Back to console</a><br /><br />
+
+<h3>Session details</h3>
+
+<table>
+<tr><td>session_id</td><td>@Model.session_id</td></tr>
+<tr><td>login_time</td><td>@Model.login_time</td></tr>
+<tr><td>explicit_tran_num</td><td>@Model.explicit_tran_num</td></tr>
+<tr><td>locks_num</td><td>@Model.locks_num</td></tr>
+<tr><td>waiting_locks_num</td><td>@Model.waiting_locks_num</td></tr>
+<tr><td>host_name</td><td>@Model.host_name</td></tr>
+<tr><td>program_name</td><td>@Model.program_name</td></tr>
+<tr><td>login_name</td><td>@Model.login_name</td></tr>
+<tr><td>status</td><td>@Model.status</td></tr>
+<tr><td>cpu_time</td><td>@Model.cpu_time</td></tr>
+<tr><td>memory_usage</td><td>@Model.memory_usage</td></tr>
+<tr><td>reads</td><td>@Model.reads</td></tr>
+<tr><td>logical_reads</td><td>@Model.logical_reads</td></tr>
+<tr><td>writes</td><td>@Model.writes</td></tr>
+<tr><td>transaction_isolation_level</td>
+<td>
+@switch(Model.transaction_isolation_level) {
+    case 1: <text>ReadUncomitted"</text> break;
+    case 2: <text>ReadComitted</text> break;
+    case 3: <text>Repeatable</text> break;
+    case 4: <text>Serializable</text> break;
+    case 5: <text>Snapshot</text> break;
+    default: <text>Unspecified</text> break;
+}
+</td></tr>
+</table>
+
+<h3>Requests</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th>SID:RID</th>
+            <th>Database</th>
+            <th>Sql</th>
+            <th style="min-width: 90px">Start time</th>
+            <th>Elapsed time (s)</th>
+            <th>Status</th>
+            <th>Command</th>
+            <th style="max-width: 60px">Blocking session</th>
+            <th>Wait type</th>
+            <th>Tran</th>
+            <th>Complete %</th>
+            <th>CPU (ms)</th>
+            <th>Reads</th>
+            <th>Logical reads</th>
+            <th>Writes</th>
+            <th>Host</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var req in Model.Requests)
+        {
+            <tr>
+                <td><a href="@Url.Action("Request", new { srv = ViewBag.srv, rid = req.request_id, sid = req.session_id })">@req.session_id:@req.request_id</a></td>
+                <td>@req.database_name</td>
+                <td><a href="@Url.Action("Request", new { srv = ViewBag.srv, rid = req.request_id, sid = req.session_id })#plan" onclick="">show</a></td>
+                <td>@req.start_time</td>
+                <td>@TimeSpan.FromSeconds(req.total_elapsed_time).TotalMinutes.ToString(".##")</td>
+                <td>@req.status</td>
+                <td>@req.command</td>
+                <td>
+                    @if (req.blocking_session_id != 0)
+                    {
+                        <a href="@Url.Action("Session", new { srv = ViewBag.srv, sid = req.blocking_session_id })">@req.blocking_session_id</a>
+                    }
+                </td>
+                <td>@req.wait_type</td>
+                <td>@req.transaction_id</td>
+                <td>@req.percent_complete.ToString("0.##")</td>
+                <td>@req.cpu_time.ToString("#,0")</td>
+                <td>@req.reads.ToString("#,0")</td>
+                <td>@req.logical_reads.ToString("#,0")</td>
+                <td>@req.writes.ToString("#,0")</td>
+                <td>@req.host_name</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<h3>Connections</h3>
+
+<table>
+    <thead>
+        <tr>
+            <th style="min-width:260px">Connection</th>
+            <th style="min-width: 90px">Connect time</th>
+            <th>Protocol type</th>
+            <th>Num reads</th>
+            <th>Num writes</th>
+            <th>Client address</th>
+            <th>Most recent sid</th>
+            <th>Current sid</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var conn in Model.Connections)
+        {
+            <tr>
+            <td>@conn.connection_id</td>
+            <td>@conn.connect_time</td>
+            <td>@conn.protocol_type</td>
+            <td>@conn.num_reads</td>
+            <td>@conn.num_writes</td>
+            <td>@conn.client_net_address</td>
+            <td>@conn.most_recent_session_id</td>
+            <td>@conn.session_id</td>
+            </tr>
+            <tr>
+            <td>Most recent sql:</td>
+            <td colspan="7"><code>@conn.text</code></td>
+            </tr>
+        }
+    </tbody>
+</table>

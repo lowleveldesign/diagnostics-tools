@@ -1,0 +1,84 @@
+﻿@model Bazik.Models.MsSqlRequest
+@{
+    ViewBag.Title = "Bazik - request details";
+}
+
+@section Scripts
+{
+    <script type="text/javascript" src="~/Scripts/qp.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready( function() {
+            QP.drawLines($("#qpDiv"));
+        });
+    </script>
+}
+
+@section Style
+{
+    <link type="text/css" href="~/styles/qp.css"  rel="stylesheet" />
+
+    <style type="text/css">
+        body
+        {
+            font-family: helvetica;
+            font-size: 12px;
+        }
+        table
+        {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        table, th, td
+        {
+            border: 1px solid black;
+            padding: 4px;
+            vertical-align: top;
+        }
+        td
+        {
+            text-align: right;
+        }
+    </style>
+}
+
+<h1>Bazik (MS SQL Server - @ViewBag.srv, @Model.session_id : @Model.request_id)</h1>
+
+<a href="@Url.Action("ShowDashboard", new { serverName = ViewBag.srv })">Back to console</a><br /><br />
+
+<h3>Request details</h3>
+
+<table>
+<tr><td>request_id</td><td>@Model.request_id</td></tr>
+<tr><td>database_name</td><td>@Model.database_name</td></tr>
+<tr><td>start_time</td><td>@Model.start_time</td></tr>
+<tr><td>total_elapsed_time</td><td>@Model.total_elapsed_time</td></tr>
+<tr><td>status</td><td>@Model.status</td></tr>
+<tr><td>command</td><td>@Model.command</td></tr>
+<tr><td>connection_id</td><td>@Model.connection_id</td></tr>
+<tr><td>session_id</td><td>@Model.session_id</td></tr>
+<tr><td>blocking_session_id</td><td>@Model.blocking_session_id</td></tr>
+<tr><td>wait_type</td><td>@Model.wait_type</td></tr>
+<tr><td>transaction_id</td><td>@Model.transaction_id</td></tr>
+<tr><td>percent_complete</td><td>@Model.percent_complete</td></tr>
+<tr><td>cpu_time</td><td>@Model.cpu_time</td></tr>
+<tr><td>reads</td><td>@Model.reads</td></tr>
+<tr><td>logical_reads</td><td>@Model.logical_reads</td></tr>
+<tr><td>writes</td><td>@Model.writes</td></tr>
+<tr><td>transaction_isolation_level</td><td>@Model.transaction_isolation_level</td></tr>
+<tr><td>host_name</td><td>@Model.host_name</td></tr>
+</table>
+
+<a name="query"><h3>Query</h3></a>
+
+<pre>
+<code>
+    @Model.query_text
+</code>
+</pre>
+
+<a name="plan"><h3>Query Plan</h3></a>
+
+<div id="qpDiv" style="clear: both; display: block; position: absolute">
+@Html.Raw(@Model.query_plan_html)
+</div>

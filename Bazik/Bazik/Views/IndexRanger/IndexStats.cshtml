@@ -1,0 +1,136 @@
+﻿@using Bazik.Models
+@model Bazik.Models.MsSqlDatabaseAnalysis
+@{
+    ViewBag.Title = "Bazik: database analysis";
+}
+
+@section Style
+{
+    <style type="text/css">
+        body
+        {
+            font-family: helvetica;
+            font-size: 12px;
+        }
+        table
+        {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        table, th, td
+        {
+            border: 1px solid black;
+            padding: 4px;
+            vertical-align: top;
+        }
+        td
+        {
+            text-align: left;
+        }
+
+        td.error
+        {
+            background-color: #FF0505;
+            color: White;
+        }
+        td.Ok
+        {
+            background-color: #9EFF77;
+            color: black;
+        }
+        td.inactive
+        {
+            background-color: #E5E0E3;
+        }
+        td.appname
+        {
+            color: #3C2BFF;
+            font-weight: bolder;
+            font-size: 14px
+        }
+    </style>
+}
+
+<h1>State of indexes (@Model.db on @Model.srv)</h1>
+
+
+<a href="@Url.Action("ShowDashboard", new { serverName = Request.Params["srv"] })">Back to console</a><br />
+
+<h2>Unused indexes</h2>
+
+<table>
+<thead>
+    <tr>
+        <th>Status</th>
+        <th>Tabela</th>
+        <th>Indeks</th>
+        <th>Odczyty</th>
+        <th>Zapisy</th>
+        <th>Stan</th>
+    </tr>
+</thead>
+@foreach (var uix in Model.UnusedIndexes) {
+    var css = uix.is_disabled ? "inactive" : String.Empty;
+    <tr>
+        <td class="@css">@uix.status</td>
+        <td class="@css">@uix.table</td>
+        <td class="@css">@uix.index</td>
+        <td class="@css">@uix.reads</td>
+        <td class="@css">@uix.writes</td>
+        @if (uix.is_disabled) {
+            <td class="inactive">DISABLED</td>
+        } else {
+            <td>ACTIVE</td>
+        }
+    </tr>
+}
+</table>
+
+<h2>Index fragmentation</h2>
+
+<p><strong>Generating fragmentation statistics is a costly operation - use with caution.</strong></p>
+
+@if (Model.LastStatsDate.HasValue) {
+    <p><em>Statistics were generated on @Model.LastStatsDate.ToString() . Press the button below to regenerate them</em>.</p>
+}
+
+@using (Html.BeginForm()) {
+    @Html.Hidden("recalculate", true);
+    <input type="submit" value="Generate" />
+}
+<br />
+
+<table>
+<thead>
+    <tr>
+        <th>Table</th>
+        <th>Index</th>
+        <th>Index type</th>
+        <th>Allocation type</th>
+        <th>Index depth</th>
+        <th>Avg fragmentation (%)</th>
+        <th>Avg fragmentation size (pages)</th>
+        <th>Page count</th>
+        <th>Avg page space used (%)</th>
+        <th>Record count</th>
+        <th>Avg record size (B)</th>
+    </tr>
+</thead>
+
+@foreach (var uix in Model.IndexesPhysicalStats) {
+    var css = uix.avg_fragmentation_in_percent > 90 ? "error" : String.Empty;
+    <tr>
+        <td class="@css">@uix.table</td>
+        <td class="@css">@uix.index</td>
+        <td class="@css">@uix.index_type_desc</td>
+        <td class="@css">@uix.alloc_unit_type_desc</td>
+        <td class="@css">@uix.index_depth</td>
+        <td class="@css">@uix.avg_fragmentation_in_percent%</td>
+        <td class="@css">@uix.avg_fragment_size_in_pages</td>
+        <td class="@css">@uix.page_count</td>
+        <td class="@css">@uix.avg_page_space_used_in_percent%</td>
+        <td class="@css">@uix.record_count</td>
+        <td class="@css">@(uix.avg_record_size_in_bytes + "B")</td>
+    </tr>
+}
+</table>

@@ -1,0 +1,201 @@
+﻿@using System.Web.Configuration
+@using Bazik.Models
+@model MsSqlDashboardModel
+@{
+    ViewBag.Title = "Bazik (MS SQL Server - " + Model.ServerName + ")";
+}
+
+@section Style
+{
+    <style type="text/css">
+        body {
+            font-family: helvetica;
+            font-size: 12px;
+        }
+
+        table {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+            padding: 4px;
+            vertical-align: top;
+        }
+
+        td {
+            text-align: right;
+        }
+    </style>
+}
+
+<h1>Bazik (MS SQL Server - @Model.ServerName)</h1>
+<div style="border: 1px solid black; padding: 3px">
+    @using (Html.BeginForm())
+    {
+        <select name="qtype">
+            <option value="si">Index state</option>
+            <option value="ttio">Top 20 Total I/O</option>
+            <option value="ttcpu">Top 20 Total CPU</option>
+            <option value="tttime">Top 20 Total Time</option>
+            <option value="taio">Top 20 Avg. IO</option>
+            <option value="tacpu">Top 20 Avg. CPU</option>
+            <option value="tatime">Top 20 Avg. Time</option>
+        </select>
+        @: na
+        <select name="db">
+            @foreach (var d in Model.DatabaseNames)
+            {
+                <option value="@d">@d</option>
+            }
+        </select>
+        @Html.Hidden("server", Model.ServerName)
+        <input type="submit" value="Pokaż" />
+    }
+</div>
+
+<h2>Active requests - server</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>SID:RID</th>
+            <th>Database</th>
+            <th>Sql</th>
+            <th style="min-width: 90px">Start time</th>
+            <th>Elapsed time (s)</th>
+            <th>Status</th>
+            <th>Command</th>
+            <th style="max-width: 60px">Blocking session</th>
+            <th>Wait type</th>
+            <th>Tran</th>
+            <th>Complete %</th>
+            <th>CPU (ms)</th>
+            <th>Reads</th>
+            <th>Logical reads</th>
+            <th>Writes</th>
+            <th>Host</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (MsSqlRequest req in Model.ActiveRequests)
+        {
+            <tr>
+                <td><a href="@Url.Action("Request", new { srv = Model.ServerName, rid = req.request_id, sid = req.session_id })">@req.session_id:@req.request_id</a></td>
+                <td>@req.database_name</td>
+                <td><a href="@Url.Action("Request", new { srv = Model.ServerName, rid = req.request_id, sid = req.session_id })#plan" onclick="">show</a></td>
+                <td>@req.start_time</td>
+                <td>@TimeSpan.FromSeconds(req.total_elapsed_time).TotalMinutes.ToString(".##")</td>
+                <td>@req.status</td>
+                <td>@req.command</td>
+                <td>
+                    @if (req.blocking_session_id != 0)
+                    {
+                        <a href="@Url.Action("Session", new { srv = Model.ServerName, sid = req.blocking_session_id })">@req.blocking_session_id</a>
+                    }
+                </td>
+                <td>@req.wait_type</td>
+                <td>@req.transaction_id</td>
+                <td>@req.percent_complete.ToString("0.##")</td>
+                <td>@req.cpu_time.ToString("#,0")</td>
+                <td>@req.reads.ToString("#,0")</td>
+                <td>@req.logical_reads.ToString("#,0")</td>
+                <td>@req.writes.ToString("#,0")</td>
+                <td>@req.host_name</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (ViewBag.HeavyLoad == null)
+{
+    <div style="float:left; margin-right: 20px">
+        <h2>Active transactions - server</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>SID</th>
+                    <th>User trn</th>
+                    <th>Host</th>
+                    <th>Program</th>
+                    <th>TranID</th>
+                    <th style="min-width: 90px">Start time</th>
+                    <th>Status</th>
+                    <th>Log rec count</th>
+                    <th>Log bytes used</th>
+                    <th>Log bytes reserved</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (MsSqlTransaction tran in Model.ActiveTransactions)
+                {
+                    <tr>
+                        <td><a href="@Url.Action("Session", new { srv = Model.ServerName, sid = tran.session_id })">@tran.session_id</a></td>
+                        <td>@(tran.is_user_transaction ? "T" : "N")</td>
+                        <td>@tran.host_name</td>
+                        <td>@tran.program_name</td>
+                        <td>@tran.transaction_id</td>
+                        <td>@tran.database_transaction_begin_time</td>
+                        <td>@tran.database_transaction_state</td>
+                        <td>@tran.database_transaction_log_record_count</td>
+                        <td>@tran.database_transaction_log_bytes_used</td>
+                        <td>@tran.database_transaction_log_bytes_reserved</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <div style="float:left;">
+        <h2>Databases with the highest transaction log usage</h2>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>
+                        Database name
+                    </th>
+                    <th style="min-width: 90px">
+                        Log Size (MB)
+                    </th>
+                    <th>
+                        Log usage (%)
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (MsSqlTransactionLogUsage tu in Model.TransactionLogUsage)
+                {
+                    <tr>
+                        <td>
+                            @tu.database_name
+                        </td>
+                        <td>
+                            @tu.log_size_mb
+                        </td>
+                        <td>
+                            <div style="width: 300px; border: solid 1px">
+                                <div style="width: @(Math.Round(3 * tu.log_space_used_perc, 0))px; background-color: red; margin: 0; padding: 0; float: left">
+                                    @Math.Round(tu.log_space_used_perc, 2)%
+                                </div>
+                                <div style="clear: both"></div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div style="clear:both"></div>
+}
+else
+{
+    <p style="color: red; font-weight: bolder; font-size: 15px">
+        SQL Server is so busy that is unable to respond in a timely fashion to our requests
+        for active sessions and transactions. Please check the requests list if there are
+        no requests to kill or optimize.
+    </p>
+}

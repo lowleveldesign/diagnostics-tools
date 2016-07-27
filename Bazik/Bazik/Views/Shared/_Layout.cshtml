@@ -1,0 +1,34 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewBag.Title</title>
+
+    <link rel="stylesheet" href="~/Styles/HomeDashboard.css" type="text/css" />
+
+    @if (IsSectionDefined("Style"))
+    {
+        @RenderSection("Style");
+    }
+    else
+    {
+        <style type="text/css">
+            /* Default styles */
+        </style>
+    }
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+
+    @if (IsSectionDefined("Scripts"))
+    {
+         @RenderSection("Scripts");
+    }
+</head>
+<body>
+    @RenderBody()
+
+    <br/>
+    <br/>
+    <p style="text-align: center">Author: Sebastian Solnica (<a href="lowleveldesign.wordpress.com">lowleveldesign.wordpress.com</a>, <a href="https://twitter.com/lowleveldesign">@@lowleveldesign</a>)</p>
+</body>
+</html>

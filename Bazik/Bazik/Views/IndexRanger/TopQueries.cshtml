@@ -1,0 +1,68 @@
+﻿@model IEnumerable<Bazik.Models.MsSqlTopQuery>
+@{
+    ViewBag.Title = "Bazik - Top Queries";
+}
+
+@section Scripts
+{
+    <script type="text/javascript" src="/Scripts/qp.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function () {
+            QP.drawLines($("#qpDiv"));
+        });
+    </script>
+}
+
+@section Style
+{
+    <link type="text/css" href="/styles/qp.css"  rel="stylesheet" />
+
+    <style type="text/css">
+        body
+        {
+            font-family: helvetica;
+            font-size: 12px;
+        }
+        table
+        {
+            border: 1px solid;
+            border-collapse: collapse;
+        }
+        table, th, td
+        {
+            border: 1px solid black;
+            padding: 4px;
+            vertical-align: top;
+        }
+        td
+        {
+            text-align: right;
+        }
+    </style>
+}
+
+<h1>Bazik - Top Query by @ViewBag.unit </h1>
+
+<a href="@Url.Action("ShowDashboard", new { serverName = Request.Params["srv"] })">Back to console</a><br /><br />
+
+<table>
+    <thead>
+        <tr>
+            <th>average @ViewBag.unit</th>
+            <th>total @ViewBag.unit</th>
+            <th>execution_count</th>
+        </tr>
+    </thead>
+        @foreach (var tq in Model)
+        {
+            <tr>
+                <td>@tq.average</td>
+                <td>@tq.total</td>
+                <td>@tq.execution_count</td>
+            </tr>
+            <tr>
+                <td colspan="3"><pre>@tq.individual_query</pre></td>
+            </tr>
+        }
+</table>
