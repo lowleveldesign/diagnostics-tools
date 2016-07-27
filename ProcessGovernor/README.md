@@ -3,6 +3,8 @@
 
 Provides a means of starting a Process with limited Resources (at the moment memory limits are supported)
 
+With contribution from weidingerhp - thank you.
+
 Usage:
 <pre>
 procgov.exe [OPTIONS] args
