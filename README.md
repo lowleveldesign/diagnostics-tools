@@ -25,9 +25,7 @@ Three tools that will help you move MSMQ messages between computers: MessageDump
 
 ### [Process Governor](ProcessGovernor)
 
-With contribution from [weidingerhp](https://github.com/weidingerhp) - thank you.
-
-This application allows you to set a limit on a memory committed by a process. On Windows committed memory is actually all private memory that the process uses. I wrote this tool to test my .NET applications (including web applications) for memory leaks. With it I can check if under heavy load they won't throw OutOfMemoryException. For more information visit my blog: <http://lowleveldesign.wordpress.com/2013/11/21/set-process-memory-limit-with-process-governor>.
+Moved to its own repository: <https://github.com/lowleveldesign/process-governor>
 
 ### [ADO.NET Trace Reader](AdoNetTraceReader)
 
