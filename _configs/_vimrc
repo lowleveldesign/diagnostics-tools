@@ -1,8 +1,4 @@
 
-" #################### Plugins ######################
-
-execute pathogen#infect()
-
 " ################# General settings ################
 
 " When started as "evim", evim.vim will already have done these settings.
