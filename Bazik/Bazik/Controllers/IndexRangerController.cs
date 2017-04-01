@@ -70,12 +70,12 @@ namespace Bazik.Controllers
                 result.DatabaseNames = conn.Query<String>("select name from sys.databases where database_id > 4 order by name");
 
                 result.ActiveRequests = conn.Query<MsSqlRequest>(
-@"select req.request_id, 
+@"select req.request_id,
     db_name(req.database_id) as database_name,
     req.start_time, req.total_elapsed_time, req.status, req.command,
     req.connection_id, req.session_id, req.blocking_Session_id,
     req.wait_type, req.transaction_id, req.percent_complete,
-    req.cpu_time, req.reads, req.logical_reads, req.writes, 
+    req.cpu_time, req.reads, req.logical_reads, req.writes,
     req.transaction_isolation_level,
     ses.host_name
 from sys.dm_exec_requests req
@@ -108,7 +108,7 @@ order by start_time asc");
       ,dt.database_transaction_begin_lsn
       ,dt.database_transaction_last_lsn
       ,st.is_user_transaction
-from sys.dm_tran_active_transactions at 
+from sys.dm_tran_active_transactions at
     join sys.dm_tran_database_transactions dt on at.transaction_id = dt.transaction_id
     join sys.dm_tran_session_transactions st on st.transaction_id = dt.transaction_id
     join sys.dm_exec_sessions sess on sess.session_id = st.session_id
@@ -130,7 +130,7 @@ order by dt.database_transaction_log_bytes_used desc", commandTimeout: 10);
                         {
                             transactionLogUsage = conn.Query<MsSqlTransactionLogUsage>(
 @"create table #t (database_name varchar(128), log_size_mb float, log_space_used_perc float, s int);
-insert into #t 
+insert into #t
 exec ('DBCC SQLPERF(logspace)');
 select * from #t where log_space_used_perc > 15 and database_name not in ('master', 'tempdb', 'msdb') order by log_space_used_perc desc;
 drop table #t", commandTimeout: 10);
@@ -177,14 +177,14 @@ drop table #t", commandTimeout: 10);
                 conn.Open();
 
                 var result = conn.Query<MsSqlSession>(
-                    @"select session_id, login_time, 
+                    @"select session_id, login_time,
         (select count(1) from sys.dm_tran_session_transactions where session_id = s.session_id) as explicit_tran_num,
         (select count(1) from sys.dm_tran_locks where request_session_id = s.session_id) as locks_num,
         (select count(1) from sys.dm_tran_locks where request_status = 'WAIT' and request_session_id = s.session_id) as waiting_locks_num,
         host_name, program_name, login_name,
         status, cpu_time, memory_usage,
         reads, logical_reads, writes, transaction_isolation_level
-    from sys.dm_exec_sessions s where 
+    from sys.dm_exec_sessions s where
         is_user_process = 1 and session_id = @sid",
                     new { sid }).FirstOrDefault();
 
@@ -195,12 +195,12 @@ drop table #t", commandTimeout: 10);
 
                 // requests
                 result.Requests = conn.Query<MsSqlRequest>(
-@"select req.request_id, 
+@"select req.request_id,
     db_name(req.database_id) as database_name,
     req.start_time, req.total_elapsed_time, req.status, req.command,
     req.connection_id, req.session_id, req.blocking_Session_id,
     req.wait_type, req.transaction_id, req.percent_complete,
-    req.cpu_time, req.reads, req.logical_reads, req.writes, 
+    req.cpu_time, req.reads, req.logical_reads, req.writes,
     req.transaction_isolation_level,
     ses.host_name
 from sys.dm_exec_requests req
@@ -248,7 +248,7 @@ from sys.dm_exec_connections c
     req.start_time, req.total_elapsed_time, req.status, req.command,
     req.connection_id, req.session_id, req.blocking_Session_id,
     req.wait_type, req.transaction_id, req.percent_complete,
-    req.cpu_time, req.reads, req.logical_reads, req.writes, 
+    req.cpu_time, req.reads, req.logical_reads, req.writes,
     req.transaction_isolation_level,
     ses.host_name
 from sys.dm_exec_requests req
@@ -295,10 +295,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_logical_reads + total_logical_writes) / qs.execution_count
             ,[total] = (total_logical_reads + total_logical_writes)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -313,10 +313,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_worker_time) / qs.execution_count
             ,[total] = (total_worker_time)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -332,10 +332,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_elapsed_time) / qs.execution_count
             ,[total] = (total_elapsed_time)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -350,10 +350,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_logical_reads + total_logical_writes) / qs.execution_count
             ,[total] = (total_logical_reads + total_logical_writes)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -368,10 +368,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_worker_time) / qs.execution_count
             ,[total] = (total_worker_time)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -386,10 +386,10 @@ where req.request_id = @rid and req.session_id = @sid",
             [average] = (total_elapsed_time) / qs.execution_count
             ,[total] = (total_elapsed_time)
             ,qs.execution_count
-            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2, 
-             (CASE WHEN qs.statement_end_offset = -1 
-                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2 
-              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2) 
+            ,[individual_query] = SUBSTRING (qt.text,qs.statement_start_offset/2,
+             (CASE WHEN qs.statement_end_offset = -1
+                THEN LEN(CONVERT(NVARCHAR(MAX), qt.text)) * 2
+              ELSE qs.statement_end_offset END - qs.statement_start_offset)/2)
             ,parent_query = qt.text
     FROM sys.dm_exec_query_stats qs
     CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) as qt
@@ -431,7 +431,7 @@ when reads = 0 and writes > 0 then 'Consider dropping : only writes'
 when writes > reads then 'Consider dropping : more writes (' + RTRIM(perc) + '% of activity)'
 when reads = writes then 'Reads and writes equal'
 end as [status],
-       object_name(i.[object_id])  as [table], 
+       object_name(i.[object_id])  as [table],
        i.Name as [index],
        c.reads,
        c.writes,

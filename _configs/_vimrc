@@ -103,10 +103,6 @@ else
   set autoindent		" always set autoindenting on
 endif " has("autocmd")
 
-" Set Powershell as the default shell
-set shell=powershell
-set shellcmdflag=-NoProfile\ -Command
-
 " Convenient command to see the difference between the current buffer and the
 " file it was loaded from, thus the changes you made.
 " Only define it when not defined already.
@@ -149,6 +145,8 @@ set ignorecase smartcase
 
 " search for tags file up the dirs
 set tags=./tags;/
+" additionally use those ctags file in vim easytags plugin
+let g:easytags_dynamic_files=1
 
 " change leader key mapping
 let mapleader=","
@@ -169,6 +167,12 @@ let g:airline_detect_paste=1
 " Use the custom theme for the Airline status bar
 let g:airline_theme='papercolor'
 
+" Do not show the NERDTree automatically
+let g:nerdtree_tabs_open_on_gui_startup=0
+" nerd tree to open a file
+" set autochdir
+" let NERDTreeChDirMode=2
+
 " ################# Shortcuts #######################
 
 " better navigation
@@ -186,13 +190,12 @@ nnoremap <leader>s :set spell!<CR>
 " search for the selected text
 vmap // y/<C-R>"<CR>
 
-" nerd tree to open a file
-set autochdir
-let NERDTreeChDirMode=2
-map <C-n> :NERDTreeToggle<CR>
-
+" Toggle NERDTree
+map <C-n> :NERDTreeTabsToggle<CR>
 " focus on nerd tree
-map <leader>t :NERDTreeFocus<CR>
+map <leader>t :NERDTreeFocusToggle<CR>
+" find the current file in the nerd tree
+map <leader>f :NERDTreeTabsFind<CR>
 
 " remove highlight with backspace
 nmap <silent>  <BS>  :nohlsearch<CR>
@@ -205,6 +208,9 @@ nnoremap <leader>d "=strftime("%c")<CR>P
 
 " code completion in insert mode
 inoremap <C-x><C-]> <C-]>
+
+" toggle tags tree
+nmap <F8> :TagbarToggle<CR>
 
 " ############### Custom file types #################
 
