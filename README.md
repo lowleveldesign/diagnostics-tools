@@ -31,7 +31,7 @@ Moved to its own repository: <https://github.com/lowleveldesign/process-governor
 
 AdoNetTraceReader is a parser for etw events stored in a xml file. In an installation package you can also find .reg files needed to enable ADO.NET tracing in a registry and a providers file for the logman tracing. For a complete example how to diagnose ADO.NET problems you may read my [blog post](http://lowleveldesign.wordpress.com/2012/09/07/diagnosing-ado-net-with-etw-traces). Just to catch up those are steps required to collect and parse ADO.NET traces:
 
-1. setup (run only once): `setup-ado.net4x64.reg or setup-ado.net4x86.reg`, `mofcomp adonet` in the framework directory (c:\Windows\Microsoft.NET\Framework64\v4.0.30319\)
+1. setup (run only once): `setup-ado.net4x64.reg or setup-ado.net4x86.reg`, `mofcomp adonetdiag.mof` in the framework directory (c:\Windows\Microsoft.NET\Framework64\v4.0.30319\)
 2. start trace collection: `logman start adonettrace -pf .\ctrl.guid.adonet -o adonettrace.etl -ets`
 3. stop trace collection after performing some data tasks: `logman stop adonettrace -ets`
 4. convert etl file to xml: `tracerpt -of xml .\adonettrace.etl`
