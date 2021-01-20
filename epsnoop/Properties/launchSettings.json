@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "epsnoop": {
+      "commandName": "Project",
+      "remoteDebugEnabled": false
+    }
+  }
+}
