@@ -25,17 +25,17 @@ namespace epsnoop
 
             Console.CancelKeyPress += (o, ev) => { ev.Cancel = true; cts.Cancel(); };
 
-            var (s1, s2) = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ?
-                                await CreateProxyWindows(pid, cts.Token) :
-                                await CreateProxyUnix(pid, cts.Token);
-
-            using (var outstream = File.Create("eventpipes.data"))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                await SniffData(s1, s2, outstream, cts.Token);
+                await StartProxyWindows(pid, cts.Token);
+            }
+            else
+            {
+                await StartProxyUnix(pid, cts.Token);
             }
         }
 
-        private static async Task<(Stream, Stream)> CreateProxyUnix(int pid, CancellationToken ct)
+        private static async Task StartProxyUnix(int pid, CancellationToken ct)
         {
             var tmp = Path.GetTempPath();
             var snoopedEndpointPath = Directory.GetFiles(tmp, $"dotnet-diagnostic-{pid}-*-socket").First();
@@ -47,70 +47,105 @@ namespace epsnoop
             using var listenSocket = new Socket(endpoint.AddressFamily, SocketType.Stream, ProtocolType.Unspecified);
             listenSocket.Bind(endpoint);
 
-            using (var _ = ct.Register(() => listenSocket.Close()))
+            using var r = ct.Register(() => listenSocket.Close());
+
+            try
             {
-                listenSocket.Listen();
-            }
+                var id = 1;
+                while (!ct.IsCancellationRequested)
+                {
+                    listenSocket.Listen();
 
-            if (ct.IsCancellationRequested)
+                    if (ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+
+                    var socket = await listenSocket.AcceptAsync();
+                    Console.WriteLine($"[{id}]: s1 connected");
+
+                    // random remote socket
+                    var senderSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
+                    await senderSocket.ConnectAsync(new UnixDomainSocketEndPoint(snoopedEndpointPath));
+                    Console.WriteLine($"[{id}]: s2 connected");
+
+                    _ = SniffData(new NetworkStream(socket, true), new NetworkStream(senderSocket, true), id, ct);
+                    id += 1;
+                }
+            }
+            catch (SocketException)
             {
-                return (Stream.Null, Stream.Null);
+                /* cancelled listen */
+                Console.WriteLine($"Stopped ({snoopingEndpointPath})");
             }
-
-            var socket = await listenSocket.AcceptAsync();
-            Console.WriteLine($"[0]: connected");
-
-            // random remote socket
-            var senderSocket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
-            await senderSocket.ConnectAsync(new UnixDomainSocketEndPoint(snoopedEndpointPath));
-            Console.WriteLine($"[1]: connected");
-
-            return (new NetworkStream(socket, true), new NetworkStream(senderSocket, true));
+            finally
+            {
+                File.Delete(snoopingEndpointPath);
+            }
         }
 
-        private static async Task<(Stream, Stream)> CreateProxyWindows(int pid, CancellationToken ct)
+        private static async Task StartProxyWindows(int pid, CancellationToken ct)
         {
+            var targetPipeName = $"dotnet-diagnostic-{pid}";
             var explorer = Process.GetProcessesByName("explorer").First();
             var pipeName = $"dotnet-diagnostic-{explorer.Id}";
-            var listener = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
-                                    PipeOptions.Asynchronous, 0, 0);
-
-            await listener.WaitForConnectionAsync(ct);
-            Console.WriteLine("[0]: connected");
-
-            if (ct.IsCancellationRequested)
+            try
             {
-                return (Stream.Null, Stream.Null);
-            }
-            var senderPipeName = $"dotnet-diagnostic-{pid}";
-            var sender = new NamedPipeClientStream(".", senderPipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
-            await sender.ConnectAsync();
-            Console.WriteLine("[1]: connected");
+                var id = 1;
+                while (!ct.IsCancellationRequested)
+                {
+                    var listener = new NamedPipeServerStream(pipeName, PipeDirection.InOut, 10, PipeTransmissionMode.Byte,
+                                            PipeOptions.Asynchronous, 0, 0);
+                    await listener.WaitForConnectionAsync(ct);
+                    Console.WriteLine($"[{id}]: s1 connected");
 
-            return (listener, sender);
+                    if (ct.IsCancellationRequested)
+                    {
+                        return;
+                    }
+                    var sender = new NamedPipeClientStream(".", targetPipeName, PipeDirection.InOut, PipeOptions.Asynchronous);
+                    await sender.ConnectAsync();
+                    Console.WriteLine($"[{id}]: s2 connected");
+
+                    _ = SniffData(listener, sender, id, ct);
+                    id += 1;
+                }
+            }
+            catch (TaskCanceledException)
+            {
+                Console.WriteLine($"Stopped ({pipeName})");
+            }
         }
 
-        private static async Task SniffData(Stream s1, Stream s2, Stream snoop, CancellationToken ct)
+        private static async Task SniffData(Stream s1, Stream s2, int id, CancellationToken ct)
         {
-            using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-            var tasks = new List<Task>() {
-                Forward(s1, s2, snoop, "s1 -> s2", cts.Token),
-                Forward(s2, s1, snoop, "s2 -> s1", cts.Token)
-            };
+            var outstream = File.Create($"eventpipes.{id}.data");
+            try
+            {
+                using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+                var tasks = new List<Task>() {
+                    Forward(s1, s2, outstream, $"{id}: s1 -> s2", cts.Token),
+                    Forward(s2, s1, outstream, $"{id}: s2 -> s1", cts.Token)
+                };
 
-            var t = await Task.WhenAny(tasks);
+                var t = await Task.WhenAny(tasks);
 
-            var ind = tasks.IndexOf(t);
-            Console.WriteLine($"[{ind}]: disconnected");
-            tasks.RemoveAt(ind);
+                var ind = tasks.IndexOf(t);
+                Console.WriteLine($"[{id}]: s{ind + 1} disconnected");
+                tasks.RemoveAt(ind);
 
-            cts.Cancel();
+                cts.Cancel();
 
-            await Task.WhenAny(tasks);
-            Console.WriteLine($"[{1 - ind}]: disconnected");
-
-            s1.Dispose();
-            s2.Dispose();
+                await Task.WhenAny(tasks);
+                Console.WriteLine($"[{id}]: s{1 - ind + 1} disconnected");
+            }
+            catch (TaskCanceledException) { }
+            finally
+            {
+                outstream.Close();
+                s1.Dispose();
+                s2.Dispose();
+            }
         }
 
         private static async Task Forward(Stream sin, Stream sout, Stream snoop, string id, CancellationToken ct)
