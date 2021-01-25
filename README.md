@@ -5,6 +5,10 @@ It is a repository of small tools which might help you diagnose .NET and Windows
 
 Following tools have been published:
 
+### [epsnoop](epsnoop) ###
+
+A tool to snoop on the .NET EventPipes. I used it to learn more about the protocol. More information in the blog post: <https://lowleveldesign.org/2021/01/20/snooping-on-net-eventpipes/>.
+
 ### [Bazik (2.0)](Bazik) ###
 
 It's a simple, but powerful, SQL Server monitor. Shows you all running requests, active transactions as well as transaction log usage. It also embeds some interesting SQL Server performance reports and, thanks to the [Justin Pealing's query plan drawer](https://github.com/JustinPealing/html-query-plan), draws nice query plans for the currently running queries. More information can be found in a post on my blog: <https://lowleveldesign.wordpress.com/2013/09/26/bazik-sql-server-monitoring-application>. Some improvements were made since then.
